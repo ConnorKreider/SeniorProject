@@ -8,12 +8,27 @@
 */
 
 #include "receive.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <stdlib.h>
 
 void main()
 {
+	// USART
+	USART_init();
+
+	// Constantly read in value from BLUESMiRF and send to DAC
+	while(1) {
+		USART_receive();	
 	
-
-
+		// TO-DO // Need to change bits from 8 to 12 for DAC
+		
+		
+	
+		// Send to DAC
+	}
+	
+	return 0;
 
 
 

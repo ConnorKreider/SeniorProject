@@ -16,7 +16,7 @@
 #define BAUD 9600
 #define MYBURR FOSC/16/BAUD-1
 
-void USART_init(unsigned in ubrr)
+void USART_init()
 {
 	// Ser Baud rate
 	UBRROH = (unsigned char)(ubrr>>8);
@@ -44,5 +44,8 @@ unsigned char USART_receive(void)
 	// Return data recieved
 	return UDRn;
 }
+
+// Get i2C working for DAC communication
+
 
 #endif
