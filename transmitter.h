@@ -58,6 +58,5 @@ void USART_transmit(unsigned char data)
 
 	// Put data into buffer and send the data
 	UDRn = data;
-
 }
 #endif 
