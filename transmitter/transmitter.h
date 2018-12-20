@@ -37,7 +37,7 @@ uint8_t adc_read(uint8_t input)
 	return (ADC);	// return converted value
 }
 
-void USART_init(unsigned int ubrr)
+void USART_init()
 {
 	// Set Baud rate
 	UBRROH = (unsigned char)(ubbr>>8);
@@ -51,7 +51,7 @@ void USART_init(unsigned int ubrr)
 	UCSROC = (1<<USBSO)|(3<<UCSZOO);
 }
 
-void USART_transmit(unsigned char data)
+void USART_transmit(uint8_t data)
 {
 	// Wait for empty transmit buffer
 	while( !(UCSRnA & (1<<UDREn));
