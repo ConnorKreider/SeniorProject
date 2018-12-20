@@ -41,7 +41,7 @@ void USART_init(unsigned int ubbr)
 {
 	// Set Baud rate
 	UBRROH = (unsigned char) (ubbr>>8);
-	UBRROL = (unsigned char) (ubbr>>8);
+	UBRROL = (unsigned char) ubbr;
 
 	// Enable Rx and Tx pins
 	UCSROB = (1<<RXENO)|(1<<TXEN0);

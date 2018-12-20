@@ -16,6 +16,20 @@
 #define BAUD 9600
 #define MYBURR FOSC/16/BAUD-1
 
+void USART_init(unsigned in ubrr)
+{
+	// Ser Baud rate
+	UBRROH = (unsigned char)(ubrr>>8);
+	UBRROL = (unsigned char)ubrr;
+
+	// Enable Rx and Tx
+	UCSROB = (1<<RXEN0)|(1<<TXENO);
+
+	// Frame format
+	UCSROC = (1<<USBS0)|(3<<UCSZOO);
+
+}
+
 unsigned char USART_receive(void)
 {
 	// Wait for an empty transmit buffer
@@ -29,5 +43,13 @@ unsigned char USART_receive(void)
 
 	// Return data recieved
 	return UDRn;
+
+}
+
+void SPI_init()
+{
+
+
+
 
 }
