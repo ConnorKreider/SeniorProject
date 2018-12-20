@@ -11,9 +11,12 @@
 #ifndef TRANSMITTER_H
 #define TRANSMITTER_H
 
+// For UART
+#define FOSC 1843200 // Clock speed
+#define BAUD 9600	// Baud Rate
+#define MYUBRR FOSC/16/BAUD-1
 
-
-void init_adc()
+void adc_init()
 {
 	// Set ARef equal to AVcc
 	ADMUX = (1<<REFS0);
@@ -23,7 +26,7 @@ void init_adc()
 
 }
 
-uint8_t read_adc(uint8_t input)
+uint8_t adc_read(uint8_t input)
 {
 
 	ADMUX = (1 << REFS0) | (input & 0x0F);	// Select the input and reference
@@ -34,6 +37,18 @@ uint8_t read_adc(uint8_t input)
 	return (ADC);	// return converted value
 }
 
+void UART_init(unsigned int ubbr)
+{
+	// Set Baud rate
+	UBRROH = (unsigned char) (ubbr>>8);
+	UBRROL = (unsigned char) (ubbr>>8);
 
+	// Enable Rx and Tx pins
+	UCSROB = (1<<RXENO)|(1<<TXEN0);
+
+	// Set up frame.
+	// 8-bit data, 2 stop bits
+	UCSROC = (1<<USBSO)|(3<<UCSZOO);
+}
 
 #endif 
