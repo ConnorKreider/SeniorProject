@@ -9,69 +9,103 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>	// for testing avr
 #include <stdlib.h>
 
 #define FOSC 1843200
 #define BAUD 9600
 //#define MYBURR FOSC/16/BAUD-1
 
-//void USART_init(unsigned int baud)
-//{
-//	//Set Baud rate
-//	UBRROH = (unsigned char)(ubrr>>8);
-//	UBRROL = (unsigned char)ubrr;
 
-//	// Enable Rx and Tx pins
-//	UCSROB = (1<<RXEN0)|(1<<TXEN0);
 
-//	// Frame format
-//	UCSROC = (1<<USBS0)|(3<<UCSZ00);
 
-//}
 
-//unsigned char USART_receive(void)
-//{
+/* void USART_init(unsigned int baud)
+{
+	//Set Baud rate
+	UBRROH = (unsigned char)(ubrr>>8);
+	UBRROL = (unsigned char)ubrr;
+
+	// Enable Rx and Tx pins
+	UCSROB = (1<<RXEN0)|(1<<TXEN0);
+
+	// Frame format
+	UCSROC = (1<<USBS0)|(3<<UCSZ00);
+
+} */
+
+/*unsigned char USART_receive(void)
+{
 	// Wait for an empty transmit buffer
-	//while(!(UCSRnA & (1<<UDREn)));
+	while(!(UCSRnA & (1<<UDREn)));
 
 	// Put data recieved into the buffer that sends data
-	//UDRn = data;
+	UDRn = data;
 
 	// Wait for data to be received
-//	while(!(UCSRnA & (1<<RXCn);
+	while(!(UCSRnA & (1<<RXCn);
 
 	// Return data received
-//	return UDRn;
-//}
+	return UDRn;
+}
+*/
+
+void TWI_init_master(void)
+{
+	TWBR = 0x01;	// Bit rate
+	TWSR = (0<<TWPS1)|(0<<TWPS0);
+}
+
+
+void TWI_init_start(void)
+{
+	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
+	while(!(TWCR & (1<<TWINT)));	// Wait for start condition to transmit
+	while((TWSR & 0xF8)!= 0x08);	// Check for acknowledgement
+	
+}
+
+void TWI_read_address(unsigned char data)
+{
+	TWDR = data;	// Read instruction
+	TWCR = (1<<TWINT)|(1<<TWEN);	// Clear TWI interrupt flag, enable TWI
+	while(!(TWCR & (1<<TWINT)));	// Wait for complete byte
+	while((TWSR & 0xF8)!= 0x40);	// Check acknoledgement
+
+}
+
+void TWI_write_data(unsigned char data)
+{
+	TWDR = data;
+	TWCR = (1<<TWINT)|(1<<TWEN);	// Clear TWI interrupt, enable TWI
+	while(!(TWCR & (1<<TWINT)));	// Wait till TWDR complete byte transmitted
+	while((TWSR & 0xF8) != 0x28);	// Check for the acknoledgment
+}
+
+void TWI_stop(void)
+{
+	//Clear TWI interrupt flag, SDA stop condition, Enable TWI
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+	while(!(TWCR & (1<<TWSTO)));	// Wait until stop condition is transmitted 
+}
 
 int main(void)
 {
+	// MCP4720 address is 0x62 for slave
+	int i;
+
+/*
 	int blink = 0;
 	DDRD = 0x00;
 	PORTD = 0xFF;
 	DDRB = 0xFF;
 
-
-	//LED on
+	
 	PORTB |= (1<<1);
-
+*/
 
 
 	// USART
-//	USART_init(BAUD);
-
-	// Start condition to enable communicate with DAC
-//	if ((TWSR & 0xF8) != START)
-
-//	while (!(TWCR & (1<<TWINT))); // Wait to see if start condition is transmitted
-	
-	// Check value of TWI status register
-	// If the status is different from Start go to Error	
-//	if ((TWSR & 0xF8) != START) {
-//		ERROR();
-//	}
-	
+	//USART_init(BAUD);
 
 	// Constantly read in value from BLUESMiRF and send to DAC
 //	while(1) {
@@ -85,37 +119,15 @@ int main(void)
 		/*************************/
 		// Communicate to the DAC
 		
-/*		// Clear to start transmission of address
-		TWDR = SLA_W;		
-		TWCR = (1<<TWINT)|(1<<TWEN);
+//	}
 
-		// Wait for flag to be set
-		while(!(TWCR & (1<<TWINT)));
+	for(i=0;i<2048;i++){
+			
 
-		// Check TWI status
-		if ((TWSR & 0xF8) != MT_SLA_ACK){
-			ERROR();
-		}
 
-		// Load the data into the register
-		TWDR = DATA;
-
-		// Clear the TWINT bit to start transmitting
-		TWCR = (1<<TWINT)|(1<<TWEN);
-
-		// Waits to make sure data was transmitted
-		while(!(TWCR & (1<<TWINT)));
-
-		// Check TWI status
-		if ((TWSR & 0xF8) != MT_DATA_ACK){
-			ERROR();
-		}
 
 	}
-
-	// Have the data stop being transmitted
-	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
-*/	
+	
 	return 0;
 
 
