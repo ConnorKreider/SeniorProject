@@ -56,7 +56,7 @@ void TWI_init_master(void)
 }
 
 
-void TWI_init_start(void)
+void TWI_start(void)
 {
 	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
 	while(!(TWCR & (1<<TWINT)));	// Wait for start condition to transmit
@@ -73,6 +73,14 @@ void TWI_read_address(unsigned char data)
 
 }
 
+void TWI_write_address(unsigned char data)
+{
+	TWDR = data;
+	TWCR = (1<<TWINT)|(1<<TWEN);
+	while(!(TWCR & (1<<TWINT)));
+	while((TWSR & 0xF8) != 0x18);
+}
+
 void TWI_write_data(unsigned char data)
 {
 	TWDR = data;
@@ -84,13 +92,18 @@ void TWI_write_data(unsigned char data)
 void TWI_stop(void)
 {
 	//Clear TWI interrupt flag, SDA stop condition, Enable TWI
-	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO); 
 	while(!(TWCR & (1<<TWSTO)));	// Wait until stop condition is transmitted 
 }
 
+// Global variables
+// MCP4720 address is 0x62 for slave
+unsigned char dacAddress = 0x62, read = 1, write = 0;
+unsigned char writeData = 0x01, recVData;
+
+
 int main(void)
 {
-	// MCP4720 address is 0x62 for slave
 	int i;
 
 /*
@@ -98,7 +111,6 @@ int main(void)
 	DDRD = 0x00;
 	PORTD = 0xFF;
 	DDRB = 0xFF;
-
 	
 	PORTB |= (1<<1);
 */
@@ -121,10 +133,24 @@ int main(void)
 		
 //	}
 
+	TWI_init_master();
+
+	// Got up the wave
 	for(i=0;i<2048;i++){
-			
+	
+		TWI_start();
+		TWI_write_address(dacAddress+write);
+		TWI_write_data(writeData);
+		TWI_stop();
 
 
+	}
+	for(i=2048;1>0;i--){
+
+		TWI_start();
+		TWI_write_address(dacAddress+write);
+		TWI_write_data(writeData);
+		TWI_stop();
 
 	}
 	
