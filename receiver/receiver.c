@@ -52,17 +52,79 @@
 void TWI_init_master(void)
 {
 	TWBR = 0x01;	// Bit rate
-	TWSR = (0<<TWPS1)|(0<<TWPS0);
-}
+	TWSR = 0; // No prescalar    //(0<<TWPS1)|(0<<TWPS0); found online
 
-
-void TWI_start(void)
-{
-	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
-	while(!(TWCR & (1<<TWINT)));	// Wait for start condition to transmit
-	while((TWSR & 0xF8)!= 0x08);	// Check for acknowledgement
+/*	DDRD = 0x00;
+	PORTD = 0xFF;
+	DDRB = 0xFF;
 	
+	PORTB |= (1<<1);
+*/
 }
+
+// start i2c
+uint8_t TWI_start(unsigned char address)
+{
+	uint8_t twst;
+
+	// Send start condition
+	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN); 
+
+	// Wait for transmission to complete
+	while(!(TWCR & (1<<TWINT)));	
+	
+	// Check value of TWI Status Register
+	// Mask Prescaler bits
+	twst = TWSR & 0xF8;
+	if (twst != 0x08) {
+	
+/*	DDRD = 0x00;
+	PORTD = 0xFF;
+	DDRB = 0xFF;
+	
+	PORTB |= (1<<1);
+*/
+	return 0;
+	}
+
+	// Send slave device address
+	TWDR = address;
+	TWCR = (1<<TWINT) | (1<<TWEN);
+
+	// Wait for transmission to complete
+	while(!(TWCR & (1<<TWINT)));
+
+	// Check value of TWI Status Register
+	// Mask prescaler bits
+	twst = TWSR & 0xF8;
+	if (twst == 0x18)  {
+	
+
+/*	DDRD = 0x00;
+	PORTD = 0xFF;
+	DDRB = 0xFF;
+	
+	PORTB |= (1<<1);
+*/
+		 return 1;	// Ack received
+	}
+	if (twst == 0x20){
+
+	DDRD = 0x00;
+	PORTD = 0xFF;
+	DDRB = 0xFF;
+	
+	PORTB |= (1<<1);
+
+
+		return 2;
+	}
+	
+	return 0;
+
+//	while((TWSR & 0xF8)!= 0x08);	// Check for acknowledgement
+	
+} // Start i2c
 
 void TWI_read_address(unsigned char data)
 {
@@ -71,15 +133,15 @@ void TWI_read_address(unsigned char data)
 	while(!(TWCR & (1<<TWINT)));	// Wait for complete byte
 	while((TWSR & 0xF8)!= 0x40);	// Check acknoledgement
 
-}
+} 
 
-void TWI_write_address(unsigned char data)
+/*void TWI_write_address(unsigned char data)
 {
 	TWDR = data;
 	TWCR = (1<<TWINT)|(1<<TWEN);
 	while(!(TWCR & (1<<TWINT)));
 	while((TWSR & 0xF8) != 0x18);
-}
+}*/
 
 void TWI_write_data(unsigned char data)
 {
@@ -135,25 +197,25 @@ int main(void)
 
 	TWI_init_master();
 
-	// Got up the wave
-	for(i=0;i<2048;i++){
+	// Go up the wave
+	//for(i=0;i<2048;i++){
 	
+	TWI_start(dacAddress+write);
+	//TWI_read_address(dacAddress+write);
+	//TWI_write_data(writeData);
+	TWI_stop();
+
+
+//	}
+/*	for(i=2048;1>0;i--){
+
 		TWI_start();
-		TWI_write_address(dacAddress+write);
+		TWI_read_address(dacAddress+write);
 		TWI_write_data(writeData);
 		TWI_stop();
 
-
 	}
-	for(i=2048;1>0;i--){
-
-		TWI_start();
-		TWI_write_address(dacAddress+write);
-		TWI_write_data(writeData);
-		TWI_stop();
-
-	}
-	
+*/	
 	return 0;
 
 
