@@ -12,7 +12,7 @@ OBJCOPY=avr-objcopy
 #when running make flash avr
 default: $(TARGET).hex
 	avrdude -pm328p -c usbtiny -P usb -U flash:w:$(TARGET).hex:i
-	#fuse for 4M lfuse:w:0xE2:m
+	#fuse for 8M lfuse:w:0xE2:m
 
 #create hex file for flashing from elf
 $(TARGET).hex: $(TARGET).elf

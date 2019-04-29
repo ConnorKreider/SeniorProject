@@ -11,9 +11,9 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <stdlib.h>
-#define FOSC 1000000
-#define BAUD 9600
-//#define MYBURR FOSC/16/BAUD-1
+#define FOSC 8000000
+#define BAUDRATE 9600
+#define UBRR_VALUE (((FOSC/(16UL * BAUDRATE))) - 1)
 #define SCL_CLOCK 100000
 
 #define LED() PORTB=0x02
@@ -28,11 +28,15 @@ void TWI_init_master(void);
 uint16_t TWI_start(uint8_t  address);
 uint16_t TWI_write_data(unsigned char data);
 void TWI_stop(void);
+void USART_init(void);
+uint16_t USART_receive(void);
+void USART_transmit(uint16_t data);
 
 int main(void)
 {
 	uint16_t i;
 	uint8_t dacAddress = 0x62;
+	uint16_t testData;
 
 #if 0
 	int blink = 0;
@@ -46,23 +50,24 @@ int main(void)
 #endif
 
 	// USART
-	//USART_init(BAUD);
+	USART_init();
 
-	// Constantly read in value from BLUESMiRF and send to DAC
-//	while(1) {
-//		USART_receive();	
-	
-
+	// Get a value from Arduino Uno and send it back
+	while(1) {
+		testData = USART_receive();	
+		testData++;
+		USART_transmit(testData);
+	}
 		// TO-DO // Need to change bits from 8 to 12 for DAC
 		// Pad the 2 most signifcant bits of the buffer
 		// This keeps the value from changing. 		
 
-		/*************************/
-		// Communicate to the DAC
 		
-//	}
+	
 
-    	DDRB = 0xFF;
+#if 0
+   	// Sending data to the DAC
+	DDRB = 0xFF;
 	TWI_init_master();
 
 	// Go up the wave
@@ -72,6 +77,7 @@ int main(void)
 	TWI_write_data(0x00);
 	TWI_write_data(0x00);
 	TWI_stop();
+
 	while (1) {
 		for (i=0;i<4096;i++) {
 			TWI_start(dacAddress);
@@ -80,54 +86,41 @@ int main(void)
 			TWI_stop();
 		}
 	}
-	while(1){
-    
-    	PORTB |= (1<<1);
-		for(i=0;i < 4095;i++){
-			TWI_write_data(i);
-		}
-		for(i = 4095; i > 0; i--){
-			TWI_write_data(i);
-		}
-		PORTB = 0;
-	}
-	TWI_stop();
-
+#endif
 	return 0;
 }
 
-
-
-
-/* void USART_init(unsigned int baud)
+void USART_init(void)
 {
 	//Set Baud rate
-	UBRROH = (unsigned char)(ubrr>>8);
-	UBRROL = (unsigned char)ubrr;
+	UBRR0H = (uint8_t)(UBRR_VALUE>>8);
+	UBRR0L = (uint8_t)UBRR_VALUE;
 
 	// Enable Rx and Tx pins
-	UCSROB = (1<<RXEN0)|(1<<TXEN0);
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
 
-	// Frame format
-	UCSROC = (1<<USBS0)|(3<<UCSZ00);
+	// Frame format: 8data, 2stopbits
+	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+}
 
-} */
-
-/*unsigned char USART_receive(void)
+uint16_t USART_receive(void)
 {
-	// Wait for an empty transmit buffer
-	while(!(UCSRnA & (1<<UDREn)));
-
-	// Put data recieved into the buffer that sends data
-	UDRn = data;
-
 	// Wait for data to be received
-	while(!(UCSRnA & (1<<RXCn);
+	while(!(UCSR0A & (1<<RXC0)));
 
 	// Return data received
-	return UDRn;
+	return UDR0;
 }
-*/
+
+void USART_transmit(uint16_t data)
+{
+	// Wait for empty transmit buffer
+	while(!(UCSR0A & (1<<UDRE0)));
+
+	// Put data into buffer, send the data;
+	UDR0 = data;
+
+}
 
 void TWI_init_master(void)
 {
