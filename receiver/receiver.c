@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #define FOSC 8000000
 #define BAUDRATE 9600
-#define UBRR_VALUE (((FOSC/(16UL * BAUDRATE))) - 1)
+#define UBRR_VALUE (((FOSC/(16 * BAUDRATE))) - 1)
 #define SCL_CLOCK 100000
 
 #define LED() PORTB=0x02
@@ -92,22 +92,29 @@ int main(void)
 
 void USART_init(void)
 {
+	
+	// Enable 2x mode
+	//UCSR0C = (1<<U2X0);
+	
 	//Set Baud rate
-	UBRR0H = (uint8_t)(UBRR_VALUE>>8);
-	UBRR0L = (uint8_t)UBRR_VALUE;
+	//UBRR0H = (uint8_t)(UBRR_VALUE>>8);
+	//UBRR0L = (uint8_t)UBRR_VALUE;
+	UBRR0 = 51; // Found in page 202 of datasheet
+	
+	// Frame format: 8data,no parity, 1stopbits
+	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
 
 	// Enable Rx and Tx pins
 	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
-
-	// Frame format: 8data, 2stopbits
-	UCSR0C = (1<<USBS0)|(3<<UCSZ00);
+	//LED();
 }
 
 uint16_t USART_receive(void)
 {
 	// Wait for data to be received
 	while(!(UCSR0A & (1<<RXC0)));
-
+	
+	LED();
 	// Return data received
 	return UDR0;
 }

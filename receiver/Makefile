@@ -3,7 +3,7 @@
 MCU = atmega328p
 TARGET = receiver
 OBJECTS = receiver.o
-F_CPU = 1000000
+F_CPU = 8000000
 CFLAGS=-funsigned-char -funsigned-bitfields -ffunction-sections -fno-inline-small-functions -fpack-struct -fshort-enums -fno-strict-aliasing -fno-split-wide-types -Wall -Wstrict-prototypes -std=gnu99 -MMD -MP -O2 -mmcu=${MCU} -g -DF_CPU=$(F_CPU) -I.
 #CFLAGS = -Wall -O2 -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I.
 CC=avr-gcc
