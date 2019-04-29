@@ -9,12 +9,92 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include <stdlib.h>
-
-#define FOSC 1843200
+#define FOSC 1000000
 #define BAUD 9600
 //#define MYBURR FOSC/16/BAUD-1
+#define SCL_CLOCK 100000
 
+#define LED() PORTB=0x02
+
+// Global variables
+// MCP4720 address is 0x62 for slave
+//unsigned char read = 1, write = 0;
+//unsigned char writeData = 0x01, recVData;
+
+
+void TWI_init_master(void);
+uint16_t TWI_start(uint8_t  address);
+uint16_t TWI_write_data(unsigned char data);
+void TWI_stop(void);
+
+int main(void)
+{
+	uint16_t i;
+	uint8_t dacAddress = 0x62;
+
+#if 0
+	int blink = 0;
+	DDRD = 0x00;
+	PORTD = 0xFF;
+	DDRB = 0xFF;
+	
+	PORTB =0xFF;
+
+	while(1);
+#endif
+
+	// USART
+	//USART_init(BAUD);
+
+	// Constantly read in value from BLUESMiRF and send to DAC
+//	while(1) {
+//		USART_receive();	
+	
+
+		// TO-DO // Need to change bits from 8 to 12 for DAC
+		// Pad the 2 most signifcant bits of the buffer
+		// This keeps the value from changing. 		
+
+		/*************************/
+		// Communicate to the DAC
+		
+//	}
+
+    	DDRB = 0xFF;
+	TWI_init_master();
+
+	// Go up the wave
+	//for(i=0;i<2048;i++){
+	
+	TWI_start(dacAddress);
+	TWI_write_data(0x00);
+	TWI_write_data(0x00);
+	TWI_stop();
+	while (1) {
+		for (i=0;i<4096;i++) {
+			TWI_start(dacAddress);
+			TWI_write_data(i>>8);
+			TWI_write_data(i&0xFF);
+			TWI_stop();
+		}
+	}
+	while(1){
+    
+    	PORTB |= (1<<1);
+		for(i=0;i < 4095;i++){
+			TWI_write_data(i);
+		}
+		for(i = 4095; i > 0; i--){
+			TWI_write_data(i);
+		}
+		PORTB = 0;
+	}
+	TWI_stop();
+
+	return 0;
+}
 
 
 
@@ -51,9 +131,10 @@
 
 void TWI_init_master(void)
 {
-	TWBR = 0x01;	// Bit rate
-	TWSR = 0; // No prescalar    //(0<<TWPS1)|(0<<TWPS0); found online
-
+	
+	TWSR = (0<<TWPS1)|(0<<TWPS0); 
+	TWBR = 0;	//((F_CPU/SCL_CLOCK)-16)/2;	// Bit rate
+	TWCR = (1<<TWEN);	
 /*	DDRD = 0x00;
 	PORTD = 0xFF;
 	DDRB = 0xFF;
@@ -62,8 +143,9 @@ void TWI_init_master(void)
 */
 }
 
+
 // start i2c
-uint8_t TWI_start(unsigned char address)
+uint16_t TWI_start(uint8_t  address)
 {
 	uint8_t twst;
 
@@ -77,18 +159,11 @@ uint8_t TWI_start(unsigned char address)
 	// Mask Prescaler bits
 	twst = TWSR & 0xF8;
 	if (twst != 0x08) {
-	
-/*	DDRD = 0x00;
-	PORTD = 0xFF;
-	DDRB = 0xFF;
-	
-	PORTB |= (1<<1);
-*/
-	return 0;
+		return 0; // return zero to indicate failure
 	}
 
 	// Send slave device address
-	TWDR = address;
+	TWDR = (address<<1);
 	TWCR = (1<<TWINT) | (1<<TWEN);
 
 	// Wait for transmission to complete
@@ -98,58 +173,71 @@ uint8_t TWI_start(unsigned char address)
 	// Mask prescaler bits
 	twst = TWSR & 0xF8;
 	if (twst == 0x18)  {
-	
-
-/*	DDRD = 0x00;
-	PORTD = 0xFF;
-	DDRB = 0xFF;
-	
-	PORTB |= (1<<1);
-*/
+		LED();
 		 return 1;	// Ack received
 	}
 	if (twst == 0x20){
-
-	DDRD = 0x00;
-	PORTD = 0xFF;
-	DDRB = 0xFF;
-	
-	PORTB |= (1<<1);
-
-
-		return 2;
+		return 2; // nack received
+	} else {
+		return 3; // Slave address + write failed
 	}
-	
-	return 0;
-
-//	while((TWSR & 0xF8)!= 0x08);	// Check for acknowledgement
 	
 } // Start i2c
 
-void TWI_read_address(unsigned char data)
+/*void TWI_read_address(unsigned char data)
 {
 	TWDR = data;	// Read instruction
 	TWCR = (1<<TWINT)|(1<<TWEN);	// Clear TWI interrupt flag, enable TWI
 	while(!(TWCR & (1<<TWINT)));	// Wait for complete byte
 	while((TWSR & 0xF8)!= 0x40);	// Check acknoledgement
 
-} 
+} */
 
-/*void TWI_write_address(unsigned char data)
+uint16_t TWI_write_data(unsigned char data)
 {
+	uint8_t twst;
+	
+	// Copy data to data register
 	TWDR = data;
+	// Enable TWI and clear interupt flag
 	TWCR = (1<<TWINT)|(1<<TWEN);
+	// Wait for current job to finish
 	while(!(TWCR & (1<<TWINT)));
-	while((TWSR & 0xF8) != 0x18);
-}*/
+	
+	twst = TWSR & 0xF8;
+	//while((TWSR & 0xF8) != 0x18);
+	if(twst == 0x28){
+	
+/*	DDRD = 0x00;
+    PORTD = 0xFF;
+    DDRB = 0xFF;
+    PORTB |= (1<<1);
+*/		
+		return 0; // ack received
+	}
+	
+	if(twst == 0x30){
+		return 1;	// nack received		
 
-void TWI_write_data(unsigned char data)
+	} else {
+		DDRD = 0x00;
+	    PORTD = 0xFF;
+	    DDRB = 0xFF;
+    	PORTB |= (1<<1);
+
+
+		return 2;	// Data transmission failed
+	}
+	
+}
+
+/*void TWI_write_data(unsigned char data)
 {
 	TWDR = data;
 	TWCR = (1<<TWINT)|(1<<TWEN);	// Clear TWI interrupt, enable TWI
 	while(!(TWCR & (1<<TWINT)));	// Wait till TWDR complete byte transmitted
 	while((TWSR & 0xF8) != 0x28);	// Check for the acknoledgment
-}
+}*/
 
 void TWI_stop(void)
 {
@@ -157,69 +245,5 @@ void TWI_stop(void)
 	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO); 
 	while(!(TWCR & (1<<TWSTO)));	// Wait until stop condition is transmitted 
 }
-
-// Global variables
-// MCP4720 address is 0x62 for slave
-unsigned char dacAddress = 0x62, read = 1, write = 0;
-unsigned char writeData = 0x01, recVData;
-
-
-int main(void)
-{
-	int i;
-
-/*
-	int blink = 0;
-	DDRD = 0x00;
-	PORTD = 0xFF;
-	DDRB = 0xFF;
-	
-	PORTB |= (1<<1);
-*/
-
-
-	// USART
-	//USART_init(BAUD);
-
-	// Constantly read in value from BLUESMiRF and send to DAC
-//	while(1) {
-//		USART_receive();	
-	
-
-		// TO-DO // Need to change bits from 8 to 12 for DAC
-		// Pad the 2 most signifcant bits of the buffer
-		// This keeps the value from changing. 		
-
-		/*************************/
-		// Communicate to the DAC
-		
-//	}
-
-	TWI_init_master();
-
-	// Go up the wave
-	//for(i=0;i<2048;i++){
-	
-	TWI_start(dacAddress+write);
-	//TWI_read_address(dacAddress+write);
-	//TWI_write_data(writeData);
-	TWI_stop();
-
-
-//	}
-/*	for(i=2048;1>0;i--){
-
-		TWI_start();
-		TWI_read_address(dacAddress+write);
-		TWI_write_data(writeData);
-		TWI_stop();
-
-	}
-*/	
-	return 0;
-
-
-}
-
 
 
