@@ -12,8 +12,8 @@
 #include <stdlib.h>
 
 // For UART
-#define FOSC 8000000 // Clock speed (need to go back and change this based on data sheet)
-#define BAUDRATE 9600	// Baud Rate
+#define FOSC 8000000 // Clock speed (need to go back and change this based on data sheet
+// Baud Rate 38.4K
 //#define MYUBRR FOSC/16/BAUD-1
 
 
@@ -39,11 +39,13 @@ void main()
 		// because the max frequency we filter til is 200Hz
 		// Sample rate is 10 * 200 = 2kSPS. Increase some more for overhead
 		// For bluetooth transmission so bits don't get dropped. 3kSPS
-		for(i=0;i<4095;i++)
+		for(i=0;i<16;i++){
 			
 	
 	//	adc_value = adc_read(PC0);	// Read value of adc from PC0, ADC pin		
-			USART_transmit(i);
+			USART_transmit('a'+i);
+		}
+		USART_transmit('\n');
 	}
 	
 	return 0;
@@ -72,10 +74,13 @@ uint16_t adc_read(uint8_t input)
 
 void USART_init(void)
 {
+	// Enable 2x mode
+	UCSR0A = (1<<U2X0);
+
 	// Set Baud Rate
 	//UBRROH = (unsigned char) (baud >> 8);
 	//UBRROL = (unsigned char) baud;
-	UBRR0 = 51;	// Found on page 202 datasheet
+	UBRR0 = 25;	// Found on page 202 datasheet
 
 	// Set up frame
 	// 8-bit data, 1 stopbit

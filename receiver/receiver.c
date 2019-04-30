@@ -49,16 +49,24 @@ int main(void)
 	while(1);
 #endif
 
-	// USART
+	// initalize USART and i2c
 	USART_init();
+	TWI_init_master();
+	
+	// Start communication with DAC
+	TWI_start(dacAddress);
+	TWI_write_data(0x00);
+	TWI_write_data(0x00);
+	TWI_stop();
 
 	// Get a value from Arduino Uno and send it back
 	while(1) {
-	//	testData = USART_receive();	
-		for(i=0;i<4095;i++){
-			//testData++;
-			USART_transmit(i);
-		}
+		testData = USART_receive();
+			
+		TWI_start(dacAddress);
+		TWI_write_data(testData>>8);
+		TWI_write_data(testData&0xFF);
+		TWI_stop();
 	}
 		// TO-DO // Need to change bits from 8 to 12 for DAC
 		// Pad the 2 most signifcant bits of the buffer
@@ -96,12 +104,12 @@ void USART_init(void)
 {
 	
 	// Enable 2x mode
-	//UCSR0C = (1<<U2X0);
+	UCSR0A = (1<<U2X0);
 	
 	//Set Baud rate
 	//UBRR0H = (uint8_t)(UBRR_VALUE>>8);
 	//UBRR0L = (uint8_t)UBRR_VALUE;
-	UBRR0 = 51; // Found in page 202 of datasheet
+	UBRR0 = 8; // Found in page 202 of datasheet
 	
 	// Frame format: 8data,no parity, 1stopbits
 	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
