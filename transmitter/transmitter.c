@@ -12,10 +12,44 @@
 #include <stdlib.h>
 
 // For UART
-#define FOSC 1843200 // Clock speed (need to go back and change this based on data sheet)
-#define BAUD 9600	// Baud Rate
+#define FOSC 8000000 // Clock speed (need to go back and change this based on data sheet)
+#define BAUDRATE 9600	// Baud Rate
 //#define MYUBRR FOSC/16/BAUD-1
 
+
+void adc_init();
+
+
+void USART_init(void);
+void USART_transmit(uint16_t data);
+
+void main()
+{
+	uint16_t adc_value;
+	uint16_t i;
+
+	// Initalize adc
+	//adc_init();
+
+	// Initalize USART
+	USART_init();
+
+	while(1) {
+		// Sample rate is based on the frequency
+		// because the max frequency we filter til is 200Hz
+		// Sample rate is 10 * 200 = 2kSPS. Increase some more for overhead
+		// For bluetooth transmission so bits don't get dropped. 3kSPS
+		for(i=0;i<4095;i++)
+			
+	
+	//	adc_value = adc_read(PC0);	// Read value of adc from PC0, ADC pin		
+			USART_transmit(i);
+	}
+	
+	return 0;
+}
+
+#if 0
 void adc_init()
 {
 	// Set ARef equal to AVcc
@@ -34,54 +68,33 @@ uint16_t adc_read(uint8_t input)
 	printf("ADC Value: %d\n",ADC);
 	return (ADC);	// Return converted value
 }
+#endif
 
-void USART_init(unsigned int baud)
+void USART_init(void)
 {
 	// Set Baud Rate
-	UBRROH = (unsigned char) (baud >> 8);
-	UBRROL = (unsigned char) baud;
-
-	// Enable Rx and Tx pins
-	UCSROB = (1 << RXENOO) | (1 << TXEN0);
+	//UBRROH = (unsigned char) (baud >> 8);
+	//UBRROL = (unsigned char) baud;
+	UBRR0 = 51;	// Found on page 202 datasheet
 
 	// Set up frame
-	// 8-bit data, 2 stop bits
-	UCSROC = (1 << USBS0) | (3 << UCSZOO);
+	// 8-bit data, 1 stopbit
+	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	
+	// Enable Rx and Tx pins
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+
 }
 
 void USART_transmit(uint16_t data)
 {
 	// Wait for empty transmit buffer
-	while( !(UCSRnA & (1 << UDREn));
+	while( !(UCSR0A & (1 << UDRE0)));
 
 	// Put data into buffer and send the data
-	URDn = data;
+	UDR0 = data;
 	// Send low byte
 	 // Send high byte need to make sure both are sent before starting next one
 }
 
 
-void main()
-{
-	uint16_t adc_value;
-
-	// Initalize adc
-	adc_init();
-
-	// Initalize USART
-	USART_init(BAUD);
-
-	while(1) {
-		// Sample rate is based on the frequency
-		// because the max frequency we filter til is 200Hz
-		// Sample rate is 10 * 200 = 2kSPS. Increase some more for overhead
-		// For bluetooth transmission so bits don't get dropped. 3kSPS
-
-
-		adc_value = adc_read(PC0);	// Read value of adc from PC0, ADC pin		
-		USART_transmit(adc_val);
-	}
-	
-	return 0;
-
-}

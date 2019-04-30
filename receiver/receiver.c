@@ -54,9 +54,11 @@ int main(void)
 
 	// Get a value from Arduino Uno and send it back
 	while(1) {
-		testData = USART_receive();	
-		testData++;
-		USART_transmit(testData);
+	//	testData = USART_receive();	
+		for(i=0;i<4095;i++){
+			//testData++;
+			USART_transmit(i);
+		}
 	}
 		// TO-DO // Need to change bits from 8 to 12 for DAC
 		// Pad the 2 most signifcant bits of the buffer
