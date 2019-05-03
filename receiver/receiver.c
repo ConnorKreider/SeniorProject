@@ -12,7 +12,7 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #define FOSC 8000000
-#define BAUDRATE 9600
+//#define BAUDRATE 38400
 #define UBRR_VALUE (((FOSC/(16 * BAUDRATE))) - 1)
 #define SCL_CLOCK 100000
 
@@ -25,8 +25,8 @@
 
 
 void TWI_init_master(void);
-uint16_t TWI_start(uint8_t  address);
-uint16_t TWI_write_data(unsigned char data);
+uint16_t TWI_start(uint8_t address);
+uint16_t TWI_write_data(uint8_t data);
 void TWI_stop(void);
 void USART_init(void);
 uint16_t USART_receive(void);
@@ -34,7 +34,7 @@ void USART_transmit(uint16_t data);
 
 int main(void)
 {
-	uint16_t i;
+//	uint16_t i;
 	uint8_t dacAddress = 0x62;
 	uint16_t testData;
 
@@ -59,10 +59,12 @@ int main(void)
 	TWI_write_data(0x00);
 	TWI_stop();
 
-	// Get a value from Arduino Uno and send it back
+	// Get a value from transmitter and send to the DAC
 	while(1) {
 		testData = USART_receive();
-			
+		//testData = (testData<<8);
+		//testData = (USART_receive() & 0xFFFF);		
+		
 		TWI_start(dacAddress);
 		TWI_write_data(testData>>8);
 		TWI_write_data(testData&0xFF);
@@ -71,8 +73,6 @@ int main(void)
 		// TO-DO // Need to change bits from 8 to 12 for DAC
 		// Pad the 2 most signifcant bits of the buffer
 		// This keeps the value from changing. 		
-
-		
 	
 
 #if 0
@@ -124,11 +124,13 @@ uint16_t USART_receive(void)
 	// Wait for data to be received
 	while(!(UCSR0A & (1<<RXC0)));
 	
-	LED();
+	//LED();
 	// Return data received
 	return UDR0;
 }
 
+// Used to test receive
+#if 0
 void USART_transmit(uint16_t data)
 {
 	// Wait for empty transmit buffer
@@ -138,6 +140,7 @@ void USART_transmit(uint16_t data)
 	UDR0 = data;
 
 }
+#endif
 
 void TWI_init_master(void)
 {
@@ -155,7 +158,7 @@ void TWI_init_master(void)
 
 
 // start i2c
-uint16_t TWI_start(uint8_t  address)
+uint16_t TWI_start(uint8_t address)
 {
 	uint8_t twst;
 
@@ -183,7 +186,7 @@ uint16_t TWI_start(uint8_t  address)
 	// Mask prescaler bits
 	twst = TWSR & 0xF8;
 	if (twst == 0x18)  {
-		LED();
+		//LED();
 		 return 1;	// Ack received
 	}
 	if (twst == 0x20){
@@ -203,7 +206,7 @@ uint16_t TWI_start(uint8_t  address)
 
 } */
 
-uint16_t TWI_write_data(unsigned char data)
+uint16_t TWI_write_data(uint8_t data)
 {
 	uint8_t twst;
 	
@@ -234,7 +237,6 @@ uint16_t TWI_write_data(unsigned char data)
 	    PORTD = 0xFF;
 	    DDRB = 0xFF;
     	PORTB |= (1<<1);
-
 
 		return 2;	// Data transmission failed
 	}
