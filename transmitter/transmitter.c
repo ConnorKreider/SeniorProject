@@ -8,6 +8,7 @@
 
 //#include "transmitter.h"
 #include <avr/io.h>
+#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
@@ -27,6 +28,7 @@ int main(void)
 	uint16_t adc_value;
 	//uint16_t i;
 
+	DDRB=0x02;
 	// Initalize USART and ADC
 	USART_init();
 	adc_init();
@@ -37,8 +39,8 @@ int main(void)
 		// Sample rate is 10 * 200 = 2kSPS. Increase some more for overhead
 		
 		adc_value = adc_read();
-		USART_transmit(adc_value);
-		USART_transmit(adc_value>>8);
+		USART_transmit((adc_value>>2)&0xFF);
+		PORTB=PORTB^0x02;
 		
 	#if 0
 		for(i=0;i<16;i++){
@@ -80,7 +82,7 @@ void USART_init(void)
 	// Set Baud Rate
 	//UBRROH = (unsigned char) (baud >> 8);
 	//UBRROL = (unsigned char) baud;
-	UBRR0 = 25;	// Found on page 202 datasheet
+	UBRR0 = 24;	// Found on page 202 datasheet
 
 	// Set up frame
 	// 8-bit data, 1 stopbit

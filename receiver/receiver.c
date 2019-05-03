@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #define FOSC 8000000
 //#define BAUDRATE 38400
-#define UBRR_VALUE (((FOSC/(16 * BAUDRATE))) - 1)
+//#define UBRR_VALUE (((FOSC/(16 * BAUDRATE))) - 1)
 #define SCL_CLOCK 100000
 
 #define LED() PORTB=0x02
@@ -36,23 +36,14 @@ int main(void)
 {
 //	uint16_t i;
 	uint8_t dacAddress = 0x62;
-	uint16_t testData;
+	uint16_t samp;
 
-#if 0
-	int blink = 0;
-	DDRD = 0x00;
-	PORTD = 0xFF;
-	DDRB = 0xFF;
-	
-	PORTB =0xFF;
-
-	while(1);
-#endif
 
 	// initalize USART and i2c
 	USART_init();
 	TWI_init_master();
 	
+	DDRB=0x02;
 	// Start communication with DAC
 	TWI_start(dacAddress);
 	TWI_write_data(0x00);
@@ -61,14 +52,13 @@ int main(void)
 
 	// Get a value from transmitter and send to the DAC
 	while(1) {
-		testData = USART_receive();
-		//testData = (testData<<8);
-		//testData = (USART_receive() & 0xFFFF);		
-		
+		samp = USART_receive();
+		samp=samp<<4;
 		TWI_start(dacAddress);
-		TWI_write_data(testData>>8);
-		TWI_write_data(testData&0xFF);
+		TWI_write_data((samp>>8)&0xFF);
+		TWI_write_data(samp&0xFF);
 		TWI_stop();
+		PORTB=PORTB^0x02;
 	}
 		// TO-DO // Need to change bits from 8 to 12 for DAC
 		// Pad the 2 most signifcant bits of the buffer
@@ -109,7 +99,8 @@ void USART_init(void)
 	//Set Baud rate
 	//UBRR0H = (uint8_t)(UBRR_VALUE>>8);
 	//UBRR0L = (uint8_t)UBRR_VALUE;
-	UBRR0 = 8; // Found in page 202 of datasheet
+// Start at 25
+	UBRR0 = 24; // Found in page 202 of datasheet
 	
 	// Frame format: 8data,no parity, 1stopbits
 	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
